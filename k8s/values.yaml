@@ -1,0 +1,40 @@
+# k8s/values.yaml
+airflow:
+  image:
+    repository: dave126/airflow-custom  # 커스텀 이미지 저장소
+    tag: 2.10.5
+    pullPolicy: Always
+
+  config:
+    AIRFLOW__CORE__EXECUTOR: "KubernetesExecutor"
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
+    AIRFLOW__WEBSERVER__SECRET_KEY: "secret-key" # "8b5b3a1e5ddbe13c99c291f6f74ed8da75e31013359b5d09e6ade44f1879116f"
+
+  dags:
+    gitSync:
+      enabled: true
+      repo: https://github.com/Seungyeup/ScrapeAndAlert.git
+      branch: main
+      subPath: "dags"
+      wait: 60
+      maxFailures: 0
+      credentialsSecret: git-credentials
+
+  extraEnv:
+    - name: YOUTH_HOUSING_SENDER_EMAIL
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
+    - name: YOUTH_HOUSING_SENDER_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_PASSWORD
+    - name: YOUTH_HOUSING_RECEIVER_EMAILS
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_RECEIVER_EMAILS
