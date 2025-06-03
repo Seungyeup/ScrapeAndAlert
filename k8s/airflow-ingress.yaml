@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: airflow-web-ingress
+  namespace: airflow
+  annotations:
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: airflow.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: airflow-webserver
+                port:
+                  number: 8080

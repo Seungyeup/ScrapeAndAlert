@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.models import Variable
+from youth_housing.crawl import crawl_youth_housing
+from youth_housing.send_email import send_email
 
-from .crawl import crawl_youth_housing
-from .notify import send_email_notification
 
 def check_new_announcements(**context):
     # 크롤링 결과 가져오기
@@ -28,11 +28,11 @@ default_args = {
 }
 
 with DAG(
-    'youth_housing_monitor',
+    'youth_housing',
     default_args=default_args,
-    description='청년안심주택 공고 모니터링 DAG',
-    schedule_interval='0 9 * * *',  # 매일 오전 9시에 실행
-    start_date=datetime(2024, 3, 20),
+    description='청년안심주택 모니터링 DAG',
+    schedule_interval='0 */6 * * *',  # 6시간마다 실행
+    start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=['youth_housing'],
 ) as dag:
@@ -48,9 +48,8 @@ with DAG(
     )
 
     send_email_task = PythonOperator(
-        task_id='send_email_notification',
-        python_callable=send_email_notification,
-        op_kwargs={'new_announcements': "{{ task_instance.xcom_pull(task_ids='check_new_announcements') }}"},
+        task_id='send_email',
+        python_callable=send_email,
     )
 
     crawl_task >> check_task >> send_email_task 

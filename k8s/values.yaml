@@ -1,40 +1,60 @@
-# k8s/values.yaml
-airflow:
-  image:
-    repository: dave126/airflow-custom  # 커스텀 이미지 저장소
-    tag: 2.10.5
-    pullPolicy: Always
+executor: "KubernetesExecutor"
 
+images:
+  airflow:
+    repository: "dave126/airflow-custom"
+    tag: "2.10.5-amd64"
+    pullPolicy: "Always"
+
+airflow:
   config:
     AIRFLOW__CORE__EXECUTOR: "KubernetesExecutor"
+    AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags/repo"
+    AIRFLOW__LOGGING__REMOTE_LOGGING: "False"
+    AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
     AIRFLOW__CORE__LOAD_EXAMPLES: "False"
     AIRFLOW__API__AUTH_BACKEND: "airflow.api.auth.backend.basic_auth"
-    AIRFLOW__WEBSERVER__SECRET_KEY: "secret-key" # "8b5b3a1e5ddbe13c99c291f6f74ed8da75e31013359b5d09e6ade44f1879116f"
-
-  dags:
-    gitSync:
-      enabled: true
-      repo: https://github.com/Seungyeup/ScrapeAndAlert.git
-      branch: main
-      subPath: "dags"
-      wait: 60
-      maxFailures: 0
-      credentialsSecret: git-credentials
+    AIRFLOW__KUBERNETES__DELETE_WORKER_PODS: "False"
+    AIRFLOW__KUBERNETES__DELETE_WORKER_PODS_ON_FAILURE: "False"
 
   extraEnv:
     - name: YOUTH_HOUSING_SENDER_EMAIL
       valueFrom:
         secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
+          name: "airflow-env-vars"
+          key: "YOUTH_HOUSING_SENDER_EMAIL"
     - name: YOUTH_HOUSING_SENDER_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_PASSWORD
+          name: "airflow-env-vars"
+          key: "YOUTH_HOUSING_SENDER_PASSWORD"
     - name: YOUTH_HOUSING_RECEIVER_EMAILS
       valueFrom:
         secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_RECEIVER_EMAILS
+          name: "airflow-env-vars"
+          key: "YOUTH_HOUSING_RECEIVER_EMAILS"
+
+dags:
+  gitSync:
+    enabled: true
+    repo: "https://github.com/Seungyeup/ScrapeAndAlert.git"
+    ref: "main"
+    branch: "main"
+    subPath: "dags"
+    wait: 60
+    credentialsSecret: "git-credentials"
+
+webserver:
+  service:
+    type: "NodePort"
+    ports:
+      - name: "airflow-ui"
+        port: 8080
+        targetPort: "airflow-ui"
+        nodePort: 30097
+
+postgresql:
+  primary:
+    persistence:
+      enabled: false

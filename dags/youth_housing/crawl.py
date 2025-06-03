@@ -1,64 +1,47 @@
+"""
+청년안심주택 공고 크롤링 모듈
+"""
 import requests
+from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+import os
 
 def crawl_youth_housing():
-    # API 엔드포인트
-    url = "https://soco.seoul.go.kr/youth/pgm/home/yohome/bbsListJson.json"
-    
-    # 요청 헤더
+    """
+    청년안심주택 공고를 크롤링하는 함수
+    """
+    url = "https://www.myhome.go.kr/hws/portal/cont/selectContRentalView.do"
     headers = {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Language': 'ko,en;q=0.9,ko-KR;q=0.8,en-US;q=0.7',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'Origin': 'https://soco.seoul.go.kr',
-        'Referer': 'https://soco.seoul.go.kr/youth/bbs/BMSR00015/list.do?menuNo=400008',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36',
-        'X-Requested-With': 'XMLHttpRequest'
-    }
-    
-    # 요청 파라미터
-    data = {
-        "bbsId": "BMSR00015",
-        "pageIndex": 1,
-        "searchAdresGu": "",
-        "searchCondition": "",
-        "searchKeyword": ""
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
     }
     
     try:
-        # API 요청
-        response = requests.post(url, headers=headers, data=data)
+        response = requests.get(url, headers=headers)
         response.raise_for_status()
         
-        # JSON 응답 파싱
-        data = response.json()
+        soup = BeautifulSoup(response.text, 'html.parser')
+        announcements = []
         
-        # 응답 구조 검증
-        if 'resultList' not in data:
-            raise ValueError(f"Unexpected API response structure: {data}")
+        # 여기에 실제 크롤링 로직 구현
+        # 예시:
+        for item in soup.select('.rental-list li'):
+            title = item.select_one('.title').text.strip()
+            date = item.select_one('.date').text.strip()
+            announcements.append({
+                'title': title,
+                'date': date
+            })
         
-        # 오늘 날짜의 공고만 필터링
-        today = datetime.now().strftime("%Y-%m-%d")
-        today_announcements = [
-            item for item in data['resultList']
-            if item.get('optn1') == today  # optn1은 공고일
-        ]
+        # 결과를 파일로 저장
+        data_dir = '/opt/airflow/data'
+        os.makedirs(data_dir, exist_ok=True)
+        
+        with open(f'{data_dir}/announcements.json', 'w', encoding='utf-8') as f:
+            json.dump(announcements, f, ensure_ascii=False, indent=2)
             
-        return {
-            'today_announcements': today_announcements,
-            'raw_data': data  # 디버깅을 위해 원본 데이터도 포함
-        }
+        return announcements
         
-    except requests.exceptions.RequestException as e:
-        print(f"API 요청 실패: {str(e)}")
-        print(f"요청 URL: {url}")
-        print(f"요청 데이터: {data}")
-        raise
-    except json.JSONDecodeError as e:
-        print(f"JSON 파싱 실패: {str(e)}")
-        print(f"응답 내용: {response.text}")
-        raise
     except Exception as e:
-        print(f"예상치 못한 에러 발생: {str(e)}")
-        raise 
+        print(f"Error during crawling: {str(e)}")
+        return [] 
