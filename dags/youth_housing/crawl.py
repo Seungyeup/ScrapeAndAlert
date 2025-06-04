@@ -2,46 +2,56 @@
 청년안심주택 공고 크롤링 모듈
 """
 import requests
-from bs4 import BeautifulSoup
 import json
 from datetime import datetime
 import os
 
 def crawl_youth_housing():
     """
-    청년안심주택 공고를 크롤링하는 함수
+    서울시 청년안심주택 공고를 크롤링하는 함수
     """
-    url = "https://www.myhome.go.kr/hws/portal/cont/selectContRentalView.do"
+    url = "https://soco.seoul.go.kr/youth/pgm/home/yohome/bbsListJson.json"
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "ko,en;q=0.9,ko-KR;q=0.8,en-US;q=0.7",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Origin": "https://soco.seoul.go.kr",
+        "Referer": "https://soco.seoul.go.kr/youth/bbs/BMSR00015/list.do?menuNo=400008",
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    }
+    
+    data = {
+        "bbsId": "BMSR00015",
+        "pageIndex": "1",
+        "searchAdresGu": "",
+        "searchCondition": "",
+        "searchKeyword": ""
     }
     
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()
         
-        soup = BeautifulSoup(response.text, 'html.parser')
-        announcements = []
+        print("응답 원문:", response.text)  # 응답 원문 출력
+        result = response.json()
+        all_announcements = result.get('resultList', [])
+        today = datetime.now().strftime("%Y-%m-%d")
+        today_announcements = [a for a in all_announcements if a.get('optn1') == today]
         
-        # 여기에 실제 크롤링 로직 구현
-        # 예시:
-        for item in soup.select('.rental-list li'):
-            title = item.select_one('.title').text.strip()
-            date = item.select_one('.date').text.strip()
-            announcements.append({
-                'title': title,
-                'date': date
-            })
-        
-        # 결과를 파일로 저장
-        data_dir = '/opt/airflow/data'
+        # 전체 공고를 파일로 저장
+        data_dir = os.getenv('AIRFLOW_HOME', os.path.join(os.path.dirname(__file__), '../../data'))
         os.makedirs(data_dir, exist_ok=True)
         
-        with open(f'{data_dir}/announcements.json', 'w', encoding='utf-8') as f:
-            json.dump(announcements, f, ensure_ascii=False, indent=2)
-            
-        return announcements
+        with open(os.path.join(data_dir, 'announcements.json'), 'w', encoding='utf-8') as f:
+            json.dump(all_announcements, f, ensure_ascii=False, indent=2)
+        
+        return {
+            'today_announcements': today_announcements
+        }
         
     except Exception as e:
         print(f"Error during crawling: {str(e)}")
-        return [] 
+        return {
+            'today_announcements': []
+        } 
