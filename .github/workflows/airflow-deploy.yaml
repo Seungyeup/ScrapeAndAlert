@@ -32,3 +32,37 @@
 #             helm upgrade airflow apache-airflow/airflow \
 #               --namespace airflow \
 #               --values k8s/values.yaml
+
+name: Deploy to Airflow
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Create Kubernetes Secret
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TAILSCALE_IP }}
+          username: ${{ secrets.K8S_USERNAME }}
+          key: ${{ secrets.K8S_SSH_KEY }}
+          script: |
+            # Secret YAML에 환경변수 주입
+            envsubst < k8s/secrets/airflow-env-vars.yaml | kubectl apply -f -
+      
+      - name: Deploy Airflow
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.TAILSCALE_IP }}
+          username: ${{ secrets.K8S_USERNAME }}
+          key: ${{ secrets.K8S_SSH_KEY }}
+          script: |
+            cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
+            git pull
+            helm upgrade airflow apache-airflow/airflow \
+              --namespace airflow \
+              --values k8s/values.yaml
