@@ -78,8 +78,22 @@ jobs:
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
-            # Secret YAML에 환경변수 주입
-            envsubst < k8s/secrets/airflow-env-vars.yaml | kubectl apply -f -
+            # Secret YAML 생성
+            cat > k8s/secrets/airflow-env-vars.yaml << EOF
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: airflow-env-vars
+              namespace: airflow
+            type: Opaque
+            data:
+              YOUTH_HOUSING_SENDER_EMAIL: ${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}
+              YOUTH_HOUSING_SENDER_PASSWORD: ${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}
+              YOUTH_HOUSING_RECEIVER_EMAILS: ${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}
+            EOF
+            
+            # Secret 적용
+            kubectl apply -f k8s/secrets/airflow-env-vars.yaml
       
       - name: Deploy Airflow
         uses: appleboy/ssh-action@master
@@ -99,3 +113,16 @@ jobs:
             helm upgrade airflow apache-airflow/airflow \
               --namespace airflow \
               --values k8s/values.yaml
+            
+            # 배포 후 상태 확인
+            echo "=== Pod Status ==="
+            kubectl get pods -n airflow
+            
+            echo "=== Webserver Logs ==="
+            kubectl logs -n airflow -l component=webserver --tail=50
+            
+            echo "=== Scheduler Logs ==="
+            kubectl logs -n airflow -l component=scheduler --tail=50
+            
+            echo "=== Triggerer Logs ==="
+            kubectl logs -n airflow -l component=triggerer --tail=50
