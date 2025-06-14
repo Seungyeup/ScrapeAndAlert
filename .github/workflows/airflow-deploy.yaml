@@ -1,38 +1,3 @@
-# # .github/workflows/airflow-deploy.yml
-# name: Deploy to Airflow
-# on:
-#   push:
-#     branches: [main]
-
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v2
-      
-#       - name: Create Kubernetes Secret
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ secrets.TAILSCALE_IP }}
-#           username: ${{ secrets.K8S_USERNAME }}
-#           key: ${{ secrets.K8S_SSH_KEY }}
-#           script: |
-#             # Secret YAML에 환경변수 주입
-#             envsubst < k8s/secrets/airflow-env-vars.yaml | kubectl apply -f -
-      
-#       - name: Deploy Airflow
-#         uses: appleboy/ssh-action@master
-#         with:
-#           host: ${{ secrets.TAILSCALE_IP }}
-#           username: ${{ secrets.K8S_USERNAME }}
-#           key: ${{ secrets.K8S_SSH_KEY }}
-#           script: |
-#             cd /path/to/airflow/config
-#             git pull
-#             helm upgrade airflow apache-airflow/airflow \
-#               --namespace airflow \
-#               --values k8s/values.yaml
-
 name: Deploy to Airflow
 on:
   push:
@@ -59,11 +24,8 @@ jobs:
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
-            # 레포지토리 디렉토리가 없으면 생성
             mkdir -p /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
-            
-            # 이미 레포지토리가 있으면 pull, 없으면 clone
             if [ -d .git ]; then
               git pull
             else
@@ -76,31 +38,29 @@ jobs:
           host: ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
+          envs: YOUTH_HOUSING_SENDER_EMAIL,YOUTH_HOUSING_SENDER_PASSWORD,YOUTH_HOUSING_RECEIVER_EMAILS
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
-            
-            # base64로 인코딩된 값 생성
-            SENDER_EMAIL_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" | base64)
-            SENDER_PASSWORD_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" | base64)
-            RECEIVER_EMAILS_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" | base64)
-            
-            # Secret YAML 생성
-            cat > k8s/secrets/airflow-env-vars.yaml <<-EOF
-            apiVersion: v1
-            kind: Secret
-            metadata:
-              name: airflow-env-vars
-              namespace: airflow
-            type: Opaque
-            data:
-              YOUTH_HOUSING_SENDER_EMAIL: ${SENDER_EMAIL_B64}
-              YOUTH_HOUSING_SENDER_PASSWORD: ${SENDER_PASSWORD_B64}
-              YOUTH_HOUSING_RECEIVER_EMAILS: ${RECEIVER_EMAILS_B64}
-            EOF
-            
-            # Secret 적용
+
+            SENDER_EMAIL_B64=$(echo -n "$YOUTH_HOUSING_SENDER_EMAIL" | base64 | tr -d '\n')
+            SENDER_PASSWORD_B64=$(echo -n "$YOUTH_HOUSING_SENDER_PASSWORD" | base64 | tr -d '\n')
+            RECEIVER_EMAILS_B64=$(echo -n "$YOUTH_HOUSING_RECEIVER_EMAILS" | base64 | tr -d '\n')
+
+            cat > k8s/secrets/airflow-env-vars.yaml <<EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: airflow-env-vars
+  namespace: airflow
+type: Opaque
+data:
+  YOUTH_HOUSING_SENDER_EMAIL: $SENDER_EMAIL_B64
+  YOUTH_HOUSING_SENDER_PASSWORD: $SENDER_PASSWORD_B64
+  YOUTH_HOUSING_RECEIVER_EMAILS: $RECEIVER_EMAILS_B64
+EOF
+
             kubectl apply -f k8s/secrets/airflow-env-vars.yaml
-      
+
       - name: Deploy Airflow
         uses: appleboy/ssh-action@master
         with:
@@ -110,25 +70,22 @@ jobs:
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
             git pull
-            
-            # Helm 저장소 추가
+
             helm repo add apache-airflow https://airflow.apache.org
             helm repo update
-            
-            # Airflow 배포
+
             helm upgrade airflow apache-airflow/airflow \
               --namespace airflow \
               --values k8s/values.yaml
-            
-            # 배포 후 상태 확인
+
             echo "=== Pod Status ==="
             kubectl get pods -n airflow
-            
+
             echo "=== Webserver Logs ==="
             kubectl logs -n airflow -l component=webserver --tail=50
-            
+
             echo "=== Scheduler Logs ==="
             kubectl logs -n airflow -l component=scheduler --tail=50
-            
+
             echo "=== Triggerer Logs ==="
             kubectl logs -n airflow -l component=triggerer --tail=50
