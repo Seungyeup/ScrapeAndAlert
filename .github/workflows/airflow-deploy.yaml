@@ -85,7 +85,7 @@ jobs:
             RECEIVER_EMAILS_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" | base64)
             
             # Secret YAML 생성
-            cat > k8s/secrets/airflow-env-vars.yaml << EOF
+            cat > k8s/secrets/airflow-env-vars.yaml <<-EOF
             apiVersion: v1
             kind: Secret
             metadata:
