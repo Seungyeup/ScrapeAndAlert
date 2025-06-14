@@ -90,6 +90,12 @@ jobs:
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
             git pull
+            
+            # Helm 저장소 추가
+            helm repo add apache-airflow https://airflow.apache.org
+            helm repo update
+            
+            # Airflow 배포
             helm upgrade airflow apache-airflow/airflow \
               --namespace airflow \
               --values k8s/values.yaml
