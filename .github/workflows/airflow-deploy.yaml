@@ -32,16 +32,17 @@ jobs:
               git clone https://github.com/Seungyeup/ScrapeAndAlert.git .
             fi
 
-      - name: Create Kubernetes Secret
+      - name: Create Kubernetes Secrets
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
-          envs: YOUTH_HOUSING_SENDER_EMAIL,YOUTH_HOUSING_SENDER_PASSWORD,YOUTH_HOUSING_RECEIVER_EMAILS
+          envs: YOUTH_HOUSING_SENDER_EMAIL,YOUTH_HOUSING_SENDER_PASSWORD,YOUTH_HOUSING_RECEIVER_EMAILS,K8S_DEPLOY_TOKEN
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
 
+            # Airflow 환경변수 시크릿 생성
             SENDER_EMAIL_B64=$(echo -n "$YOUTH_HOUSING_SENDER_EMAIL" | base64 | tr -d '\n')
             SENDER_PASSWORD_B64=$(echo -n "$YOUTH_HOUSING_SENDER_PASSWORD" | base64 | tr -d '\n')
             RECEIVER_EMAILS_B64=$(echo -n "$YOUTH_HOUSING_RECEIVER_EMAILS" | base64 | tr -d '\n')
@@ -61,6 +62,13 @@ jobs:
 
             kubectl apply -f k8s/secrets/airflow-env-vars.yaml
 
+            # Git credentials 시크릿 생성
+            kubectl create secret generic git-credentials \
+              --namespace airflow \
+              --from-literal=GIT_SYNC_USERNAME=Seungyeup \
+              --from-literal=GIT_SYNC_PASSWORD="$K8S_DEPLOY_TOKEN" \
+              --dry-run=client -o yaml | kubectl apply -f -
+
       - name: Deploy Airflow
         uses: appleboy/ssh-action@master
         with:
@@ -77,15 +85,3 @@ jobs:
             helm upgrade airflow apache-airflow/airflow \
               --namespace airflow \
               --values k8s/values.yaml
-
-            echo "=== Pod Status ==="
-            kubectl get pods -n airflow
-
-            echo "=== Webserver Logs ==="
-            kubectl logs -n airflow -l component=webserver --tail=50
-
-            echo "=== Scheduler Logs ==="
-            kubectl logs -n airflow -l component=scheduler --tail=50
-
-            echo "=== Triggerer Logs ==="
-            kubectl logs -n airflow -l component=triggerer --tail=50
