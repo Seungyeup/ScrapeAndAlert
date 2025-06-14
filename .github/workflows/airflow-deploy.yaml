@@ -47,17 +47,17 @@ jobs:
             RECEIVER_EMAILS_B64=$(echo -n "$YOUTH_HOUSING_RECEIVER_EMAILS" | base64 | tr -d '\n')
 
             cat > k8s/secrets/airflow-env-vars.yaml <<EOF
-apiVersion: v1
-kind: Secret
-metadata:
-  name: airflow-env-vars
-  namespace: airflow
-type: Opaque
-data:
-  YOUTH_HOUSING_SENDER_EMAIL: $SENDER_EMAIL_B64
-  YOUTH_HOUSING_SENDER_PASSWORD: $SENDER_PASSWORD_B64
-  YOUTH_HOUSING_RECEIVER_EMAILS: $RECEIVER_EMAILS_B64
-EOF
+            apiVersion: v1
+            kind: Secret
+            metadata:
+              name: airflow-env-vars
+              namespace: airflow
+            type: Opaque
+            data:
+              YOUTH_HOUSING_SENDER_EMAIL: $SENDER_EMAIL_B64
+              YOUTH_HOUSING_SENDER_PASSWORD: $SENDER_PASSWORD_B64
+              YOUTH_HOUSING_RECEIVER_EMAILS: $RECEIVER_EMAILS_B64
+            EOF
 
             kubectl apply -f k8s/secrets/airflow-env-vars.yaml
 
