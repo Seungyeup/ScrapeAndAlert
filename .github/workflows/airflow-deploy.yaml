@@ -44,10 +44,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: Debug SSH Key
+        run: |
+          echo "SSH Key length: $(echo "${{ secrets.K8S_SSH_KEY }}" | wc -l)"
+          echo "SSH Key first line: $(echo "${{ secrets.K8S_SSH_KEY }}" | head -n 1)"
+          echo "SSH Key last line: $(echo "${{ secrets.K8S_SSH_KEY }}" | tail -n 1)"
+      
       - name: Create Kubernetes Secret
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.TAILSCALE_IP }}
+          host: ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
@@ -57,7 +63,7 @@ jobs:
       - name: Deploy Airflow
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.TAILSCALE_IP }}
+          host: ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
