@@ -87,9 +87,9 @@ jobs:
               namespace: airflow
             type: Opaque
             data:
-              YOUTH_HOUSING_SENDER_EMAIL: ${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}
-              YOUTH_HOUSING_SENDER_PASSWORD: ${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}
-              YOUTH_HOUSING_RECEIVER_EMAILS: ${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}
+              YOUTH_HOUSING_SENDER_EMAIL: $(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" | base64)
+              YOUTH_HOUSING_SENDER_PASSWORD: $(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" | base64)
+              YOUTH_HOUSING_RECEIVER_EMAILS: $(echo -n "${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" | base64)
             EOF
             
             # Secret 적용
