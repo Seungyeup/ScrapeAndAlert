@@ -48,3 +48,5 @@ data/*.json
 # direnv
 .envrc
 
+# data samples
+data_samples/
