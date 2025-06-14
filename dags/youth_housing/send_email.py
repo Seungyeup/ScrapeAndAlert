@@ -6,6 +6,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import json
+from datetime import datetime
 
 def send_email():
     """
@@ -21,13 +22,32 @@ def send_email():
         return
     
     # 크롤링 결과 읽기
+    data_dir = os.getenv('AIRFLOW_HOME', '/opt/airflow')
     try:
-        with open('/opt/airflow/data/announcements.json', 'r', encoding='utf-8') as f:
+        with open(os.path.join(data_dir, 'data/announcements.json'), 'r', encoding='utf-8') as f:
             announcements = json.load(f)
     except Exception as e:
         print(f"결과 파일 읽기 실패: {str(e)}")
         return
-    
+
+    # 이미 이메일을 보낸 공고 추적 파일
+    sent_announcements_file = os.path.join(data_dir, 'data/sent_announcements.json')
+    try:
+        with open(sent_announcements_file, 'r', encoding='utf-8') as f:
+            sent_announcements = json.load(f)
+    except FileNotFoundError:
+        sent_announcements = []
+
+    # 새로운 공고만 필터링
+    new_announcements = [
+        a for a in announcements 
+        if a['title'] not in [sa['title'] for sa in sent_announcements]
+    ]
+
+    if not new_announcements:
+        print("새로운 공고가 없습니다.")
+        return
+
     # 이메일 내용 작성
     msg = MIMEMultipart()
     msg['Subject'] = '청년안심주택 공고 알림'
@@ -46,11 +66,11 @@ def send_email():
                 </tr>
     """
     
-    for announcement in announcements:
+    for announcement in new_announcements:
         html += f"""
                 <tr>
                     <td>{announcement['title']}</td>
-                    <td>{announcement['date']}</td>
+                    <td>{announcement['optn1']}</td>
                 </tr>
         """
     
@@ -68,5 +88,11 @@ def send_email():
             smtp.login(sender_email, sender_password)
             smtp.send_message(msg)
         print("이메일 전송 완료")
+
+        # 전송한 공고 기록 업데이트
+        sent_announcements.extend(new_announcements)
+        with open(sent_announcements_file, 'w', encoding='utf-8') as f:
+            json.dump(sent_announcements, f, ensure_ascii=False, indent=2)
+
     except Exception as e:
         print(f"이메일 전송 실패: {str(e)}") 

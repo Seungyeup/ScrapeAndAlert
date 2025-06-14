@@ -19,16 +19,16 @@ def check_new_announcements(**context):
         task_ids='crawl_youth_housing',
         key='return_value'
     )
-    if not crawl_result or 'today_announcements' not in crawl_result:
+    if not crawl_result or 'recent_announcements' not in crawl_result:
         return []
-    today_announcements = crawl_result['today_announcements']
-    return today_announcements or []
+    recent_announcements = crawl_result['recent_announcements']
+    return recent_announcements or []
 
 with DAG(
     'youth_housing',
     default_args=default_args,
     description='청년안심주택 모니터링 DAG',
-    schedule_interval='0 */6 * * *',
+    schedule_interval='0 */6 * * *',  # 6시간마다 실행
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

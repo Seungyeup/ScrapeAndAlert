@@ -3,7 +3,7 @@
 """
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 
 def crawl_youth_housing():
@@ -36,8 +36,14 @@ def crawl_youth_housing():
         print("응답 원문:", response.text)  # 응답 원문 출력
         result = response.json()
         all_announcements = result.get('resultList', [])
-        today = datetime.now().strftime("%Y-%m-%d")
-        today_announcements = [a for a in all_announcements if a.get('optn1') == today]
+        
+        # 지난 일주일간의 공고 필터링
+        today = datetime.now()
+        week_ago = today - timedelta(days=7)
+        recent_announcements = [
+            a for a in all_announcements 
+            if datetime.strptime(a.get('optn1', ''), "%Y-%m-%d") >= week_ago
+        ]
         
         # 전체 공고를 파일로 저장
         data_dir = os.getenv('AIRFLOW_HOME', os.path.join(os.path.dirname(__file__), '../../data'))
@@ -47,11 +53,11 @@ def crawl_youth_housing():
             json.dump(all_announcements, f, ensure_ascii=False, indent=2)
         
         return {
-            'today_announcements': today_announcements
+            'recent_announcements': recent_announcements
         }
         
     except Exception as e:
         print(f"Error during crawling: {str(e)}")
         return {
-            'today_announcements': []
+            'recent_announcements': []
         } 
