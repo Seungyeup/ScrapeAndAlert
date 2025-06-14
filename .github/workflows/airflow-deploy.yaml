@@ -52,7 +52,24 @@ jobs:
           tags: tag:ci
           version: latest
 
-      
+      - name: Setup Repository on Master Node
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.K8S_HOST_IP }}
+          username: ${{ secrets.K8S_USERNAME }}
+          key: ${{ secrets.K8S_SSH_KEY }}
+          script: |
+            # 레포지토리 디렉토리가 없으면 생성
+            mkdir -p /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
+            cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
+            
+            # 이미 레포지토리가 있으면 pull, 없으면 clone
+            if [ -d .git ]; then
+              git pull
+            else
+              git clone https://github.com/Seungyeup/ScrapeAndAlert.git .
+            fi
+
       - name: Create Kubernetes Secret
         uses: appleboy/ssh-action@master
         with:
@@ -60,6 +77,7 @@ jobs:
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
+            cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
             # Secret YAML에 환경변수 주입
             envsubst < k8s/secrets/airflow-env-vars.yaml | kubectl apply -f -
       
