@@ -78,6 +78,12 @@ jobs:
           key: ${{ secrets.K8S_SSH_KEY }}
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
+            
+            # base64로 인코딩된 값 생성
+            SENDER_EMAIL_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" | base64)
+            SENDER_PASSWORD_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" | base64)
+            RECEIVER_EMAILS_B64=$(echo -n "${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" | base64)
+            
             # Secret YAML 생성
             cat > k8s/secrets/airflow-env-vars.yaml << EOF
             apiVersion: v1
@@ -87,9 +93,9 @@ jobs:
               namespace: airflow
             type: Opaque
             data:
-              YOUTH_HOUSING_SENDER_EMAIL: $(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" | base64)
-              YOUTH_HOUSING_SENDER_PASSWORD: $(echo -n "${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" | base64)
-              YOUTH_HOUSING_RECEIVER_EMAILS: $(echo -n "${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" | base64)
+              YOUTH_HOUSING_SENDER_EMAIL: ${SENDER_EMAIL_B64}
+              YOUTH_HOUSING_SENDER_PASSWORD: ${SENDER_PASSWORD_B64}
+              YOUTH_HOUSING_RECEIVER_EMAILS: ${RECEIVER_EMAILS_B64}
             EOF
             
             # Secret 적용
