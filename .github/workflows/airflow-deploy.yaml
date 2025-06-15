@@ -83,5 +83,6 @@ jobs:
             helm repo update
 
             helm upgrade airflow apache-airflow/airflow \
+              --version 1.15.0 \
               --namespace airflow \
               --values k8s/values.yaml
