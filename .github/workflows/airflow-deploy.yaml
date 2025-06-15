@@ -67,6 +67,8 @@ jobs:
               --namespace airflow \
               --from-literal=GIT_SYNC_USERNAME=Seungyeup \
               --from-literal=GIT_SYNC_PASSWORD="$K8S_DEPLOY_TOKEN" \
+              --from-literal=GITSYNC_USERNAME=Seungyeup \
+              --from-literal=GITSYNC_PASSWORD="$K8S_DEPLOY_TOKEN" \
               --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Airflow
