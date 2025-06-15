@@ -3,7 +3,7 @@ executor: "KubernetesExecutor"
 images:
   airflow:
     repository: "dave126/airflow-custom"
-    tag: "2.10.5-amd64"
+    tag: "2.9.3-amd64"
     pullPolicy: "Always"
 
 airflow:
@@ -57,4 +57,5 @@ webserver:
 postgresql:
   primary:
     persistence:
-      enabled: false
+      enabled: true
+      storageClass: "local-path"
