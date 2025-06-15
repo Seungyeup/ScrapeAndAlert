@@ -9,7 +9,7 @@ images:
 airflow:
   config:
     AIRFLOW__CORE__EXECUTOR: "KubernetesExecutor"
-    AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags/repo"
+    AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags/repo/dags"
     AIRFLOW__LOGGING__REMOTE_LOGGING: "False"
     AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
