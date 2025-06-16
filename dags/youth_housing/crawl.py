@@ -5,6 +5,7 @@ import requests
 import json
 from datetime import datetime, timedelta
 import os
+import logging
 
 def crawl_youth_housing():
     """
@@ -33,7 +34,7 @@ def crawl_youth_housing():
         response = requests.post(url, headers=headers, data=data)
         response.raise_for_status()
         
-        print("응답 원문:", response.text)  # 응답 원문 출력
+        logging.info("응답 원문: %s", response.text)
         result = response.json()
         all_announcements = result.get('resultList', [])
         
@@ -46,27 +47,29 @@ def crawl_youth_housing():
         ]
         
         # 데이터 디렉토리 생성
-        data_dir = os.getenv('AIRFLOW_HOME', '/opt/airflow')
-        data_dir = os.path.join(data_dir, 'data')
+        data_dir = '/opt/airflow/data'
         os.makedirs(data_dir, exist_ok=True)
+        logging.info("데이터 디렉토리 생성/확인: %s", data_dir)
         
         # announcements.json 파일 저장
         announcements_file = os.path.join(data_dir, 'announcements.json')
         with open(announcements_file, 'w', encoding='utf-8') as f:
             json.dump(all_announcements, f, ensure_ascii=False, indent=2)
+        logging.info("announcements.json 파일 저장 완료: %s", announcements_file)
         
         # sent_announcements.json 파일이 없으면 생성
         sent_announcements_file = os.path.join(data_dir, 'sent_announcements.json')
         if not os.path.exists(sent_announcements_file):
             with open(sent_announcements_file, 'w', encoding='utf-8') as f:
                 json.dump([], f, ensure_ascii=False, indent=2)
+            logging.info("sent_announcements.json 파일 생성 완료: %s", sent_announcements_file)
         
         return {
             'recent_announcements': recent_announcements
         }
         
     except Exception as e:
-        print(f"Error during crawling: {str(e)}")
+        logging.error("크롤링 중 오류 발생: %s", str(e))
         return {
             'recent_announcements': []
         } 
