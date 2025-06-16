@@ -43,7 +43,7 @@ dags:
     branch: "main"
     subPath: "dags"
     wait: 60
-    credentialsSecret: "git-credentials"
+    # credentialsSecret: "git-credentials" # public repo로 전환되어 비활성화
 
 webserver:
   service:
