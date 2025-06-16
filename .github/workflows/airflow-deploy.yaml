@@ -38,7 +38,11 @@ jobs:
           host: ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
           key: ${{ secrets.K8S_SSH_KEY }}
-          envs: YOUTH_HOUSING_SENDER_EMAIL,YOUTH_HOUSING_SENDER_PASSWORD,YOUTH_HOUSING_RECEIVER_EMAILS,K8S_DEPLOY_TOKEN
+          env:
+            YOUTH_HOUSING_SENDER_EMAIL:    ${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}
+            YOUTH_HOUSING_SENDER_PASSWORD: ${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}
+            YOUTH_HOUSING_RECEIVER_EMAILS: ${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}
+            K8S_DEPLOY_TOKEN:              ${{ secrets.K8S_DEPLOY_TOKEN }}
           script: |
             # 필요 시 기존 시크릿 삭제
             kubectl delete secret airflow-env-vars -n airflow || true
