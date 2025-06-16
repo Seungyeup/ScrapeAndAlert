@@ -23,27 +23,60 @@ images:
     pullPolicy: "Always"
 
 airflow:
+  # 1) 기존 시크릿 환경변수 불러오기
+  extraEnvFrom:
+    - secretRef:
+        name: airflow-env-vars
+
   extraEnv:
+    # 2) Postgres 연결
     - name: AIRFLOW_CONN_POSTGRES_DEFAULT
       valueFrom:
         secretKeyRef:
-          name: airflow-postgresql       # PostgreSQL Secret 이름
-          key:  postgres-password        # Secret에 저장된 비밀번호 키
+          name: airflow-postgresql
+          key: postgres-password
+
+    # 3) 이메일 발송용 시크릿 변수
     - name: YOUTH_HOUSING_SENDER_EMAIL
       valueFrom:
         secretKeyRef:
-          name: "airflow-env-vars"
-          key: "YOUTH_HOUSING_SENDER_EMAIL"
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
     - name: YOUTH_HOUSING_SENDER_PASSWORD
       valueFrom:
         secretKeyRef:
-          name: "airflow-env-vars"
-          key: "YOUTH_HOUSING_SENDER_PASSWORD"
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_PASSWORD
     - name: YOUTH_HOUSING_RECEIVER_EMAILS
       valueFrom:
         secretKeyRef:
-          name: "airflow-env-vars"
-          key: "YOUTH_HOUSING_RECEIVER_EMAILS"
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_RECEIVER_EMAILS
+
+    # 4) SMTP 설정 (airflow.cfg [email] 섹션 오버라이드)
+    - name: AIRFLOW__EMAIL__SMTP_HOST
+      value: "smtp.gmail.com"
+    - name: AIRFLOW__EMAIL__SMTP_PORT
+      value: "465"
+    - name: AIRFLOW__EMAIL__SMTP_STARTTLS
+      value: "False"
+    - name: AIRFLOW__EMAIL__SMTP_SSL
+      value: "True"
+    - name: AIRFLOW__EMAIL__SMTP_USER
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
+    - name: AIRFLOW__EMAIL__SMTP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_PASSWORD
+    - name: AIRFLOW__EMAIL__SMTP_MAIL_FROM
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
 
 dags:
   gitSync:
@@ -53,7 +86,7 @@ dags:
     branch: "main"
     subPath: "dags"
     wait: 60
-    # credentialsSecret: "git-credentials" # public repo로 전환되어 비활성화
+    # credentialsSecret: "git-credentials"  # public repo 전환으로 비활성화
 
 webserver:
   service:
@@ -63,7 +96,6 @@ webserver:
         port: 8080
         targetPort: "airflow-ui"
         nodePort: 30097
-
 
 postgresql:
   primary:
