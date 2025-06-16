@@ -47,14 +47,14 @@ def crawl_youth_housing():
         ]
         
         # 데이터 디렉토리 생성
-        data_dir = '/opt/airflow/data'
+        data_dir = '/tmp/youth_housing'
         os.makedirs(data_dir, exist_ok=True)
         logging.info("데이터 디렉토리 생성/확인: %s", data_dir)
         
-        # announcements.json 파일 저장
+        # announcements.json 파일 저장 (최근 공고만)
         announcements_file = os.path.join(data_dir, 'announcements.json')
         with open(announcements_file, 'w', encoding='utf-8') as f:
-            json.dump(all_announcements, f, ensure_ascii=False, indent=2)
+            json.dump(recent_announcements, f, ensure_ascii=False, indent=2)
         logging.info("announcements.json 파일 저장 완료: %s", announcements_file)
         
         # sent_announcements.json 파일이 없으면 생성
