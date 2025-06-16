@@ -45,12 +45,21 @@ def crawl_youth_housing():
             if datetime.strptime(a.get('optn1', ''), "%Y-%m-%d") >= week_ago
         ]
         
-        # 전체 공고를 파일로 저장
-        data_dir = os.getenv('AIRFLOW_HOME', os.path.join(os.path.dirname(__file__), '../../data'))
+        # 데이터 디렉토리 생성
+        data_dir = os.getenv('AIRFLOW_HOME', '/opt/airflow')
+        data_dir = os.path.join(data_dir, 'data')
         os.makedirs(data_dir, exist_ok=True)
         
-        with open(os.path.join(data_dir, 'announcements.json'), 'w', encoding='utf-8') as f:
+        # announcements.json 파일 저장
+        announcements_file = os.path.join(data_dir, 'announcements.json')
+        with open(announcements_file, 'w', encoding='utf-8') as f:
             json.dump(all_announcements, f, ensure_ascii=False, indent=2)
+        
+        # sent_announcements.json 파일이 없으면 생성
+        sent_announcements_file = os.path.join(data_dir, 'sent_announcements.json')
+        if not os.path.exists(sent_announcements_file):
+            with open(sent_announcements_file, 'w', encoding='utf-8') as f:
+                json.dump([], f, ensure_ascii=False, indent=2)
         
         return {
             'recent_announcements': recent_announcements
