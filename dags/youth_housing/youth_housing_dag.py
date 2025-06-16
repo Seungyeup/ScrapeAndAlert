@@ -35,7 +35,8 @@ with DAG(
 
     notify = EmailOperator(
         task_id='send_email',
-        to=receivers,                               
+        to=receivers,
+        from_email=sender,                         
         subject='[역세권청년주택] 신규 모집공고 알림',
         html_content='{{ ti.xcom_pull(task_ids="crawl_youth_housing") }}',
         # smtp_conn_id: Connection으로 SMTP 설정 시 사용
