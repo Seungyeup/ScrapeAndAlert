@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Tailscale
         uses: tailscale/github-action@v3
         with:
@@ -34,43 +34,38 @@ jobs:
 
       - name: Create Kubernetes Secrets
         uses: appleboy/ssh-action@master
-        env:
-            YOUTH_HOUSING_SENDER_EMAIL:    ${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}
-            YOUTH_HOUSING_SENDER_PASSWORD: ${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}
-            YOUTH_HOUSING_RECEIVER_EMAILS: ${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}
-            K8S_DEPLOY_TOKEN:              ${{ secrets.K8S_DEPLOY_TOKEN }}
         with:
-          host: ${{ secrets.K8S_HOST_IP }}
+          host:     ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
-          key: ${{ secrets.K8S_SSH_KEY }}
+          key:      ${{ secrets.K8S_SSH_KEY }}
           script: |
-            # 필요 시 기존 시크릿 삭제
+            # 기존 시크릿 삭제
             kubectl delete secret airflow-env-vars -n airflow || true
             kubectl delete secret git-credentials -n airflow || true
 
             # Airflow 환경변수 시크릿 생성
             kubectl create secret generic airflow-env-vars \
               --namespace airflow \
-              --from-literal=YOUTH_HOUSING_SENDER_EMAIL="$YOUTH_HOUSING_SENDER_EMAIL" \
-              --from-literal=YOUTH_HOUSING_SENDER_PASSWORD="$YOUTH_HOUSING_SENDER_PASSWORD" \
-              --from-literal=YOUTH_HOUSING_RECEIVER_EMAILS="$YOUTH_HOUSING_RECEIVER_EMAILS" \
+              --from-literal=YOUTH_HOUSING_SENDER_EMAIL="${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" \
+              --from-literal=YOUTH_HOUSING_SENDER_PASSWORD="${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" \
+              --from-literal=YOUTH_HOUSING_RECEIVER_EMAILS="${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" \
               --dry-run=client -o yaml | kubectl apply -f -
 
             # Git credentials 시크릿 생성
             kubectl create secret generic git-credentials \
               --namespace airflow \
               --from-literal=GIT_SYNC_USERNAME=Seungyeup \
-              --from-literal=GIT_SYNC_PASSWORD="$K8S_DEPLOY_TOKEN" \
+              --from-literal=GIT_SYNC_PASSWORD="${{ secrets.K8S_DEPLOY_TOKEN }}" \
               --from-literal=GITSYNC_USERNAME=Seungyeup \
-              --from-literal=GITSYNC_PASSWORD="$K8S_DEPLOY_TOKEN" \
+              --from-literal=GITSYNC_PASSWORD="${{ secrets.K8S_DEPLOY_TOKEN }}" \
               --dry-run=client -o yaml | kubectl apply -f -
 
       - name: Deploy Airflow
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.K8S_HOST_IP }}
+          host:     ${{ secrets.K8S_HOST_IP }}
           username: ${{ secrets.K8S_USERNAME }}
-          key: ${{ secrets.K8S_SSH_KEY }}
+          key:      ${{ secrets.K8S_SSH_KEY }}
           script: |
             cd /home/${{ secrets.K8S_USERNAME }}/ScrapeAndAlert
             git pull
@@ -79,8 +74,8 @@ jobs:
             helm repo update
 
             helm upgrade --install airflow apache-airflow/airflow \
-            --version 1.15.0 \
-            --namespace airflow \
-            -f ./k8s/values.yaml 
+              --version 1.15.0 \
+              --namespace airflow \
+              -f ./k8s/values.yaml 
 
             kubectl apply -f ./k8s/airflow-ingress.yaml
