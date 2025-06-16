@@ -47,7 +47,7 @@ def crawl_youth_housing():
         ]
         
         # 데이터 디렉토리 생성
-        data_dir = '/tmp/youth_housing'
+        data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data')
         os.makedirs(data_dir, exist_ok=True)
         logging.info("데이터 디렉토리 생성/확인: %s", data_dir)
         
