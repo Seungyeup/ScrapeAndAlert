@@ -82,3 +82,5 @@ jobs:
             --version 1.15.0 \
             --namespace airflow \
             -f ./k8s/values.yaml 
+
+            kubectl apply -f ./k8s/airflow-ingress.yaml
