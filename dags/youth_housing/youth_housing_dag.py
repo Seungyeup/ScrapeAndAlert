@@ -1,54 +1,35 @@
-from datetime import datetime, timedelta
+# dags/youth_housing/youth_housing_dag.py
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from youth_housing.crawl import crawl_youth_housing
-from youth_housing.send_email import send_email
-import logging
+from datetime import datetime, timedelta
+from youth_housing.crawl_youth_housing import crawl_youth_housing
+from youth_housing.send_email import send_email_task
 
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'email_on_failure': False,
-    'email_on_retry': False,
+    'start_date': datetime(2025, 6, 1),
     'retries': 1,
     'retry_delay': timedelta(minutes=5),
 }
 
-def check_new_announcements(**context):
-    crawl_result = context['task_instance'].xcom_pull(
-        task_ids='crawl_youth_housing',
-        key='return_value'
-    )
-    if not crawl_result or 'recent_announcements' not in crawl_result:
-        return []
-    recent_announcements = crawl_result['recent_announcements']
-    return recent_announcements or []
-
 with DAG(
-    'youth_housing',
+    dag_id='youth_housing',
+    schedule_interval='0 6 * * *',
     default_args=default_args,
-    description='청년안심주택 모니터링 DAG',
-    schedule_interval='0 */6 * * *',  # 6시간마다 실행
-    start_date=datetime(2024, 1, 1),
     catchup=False,
-    max_active_runs=1,
-    tags=['youth_housing'],
 ) as dag:
 
-    crawl_task = PythonOperator(
+    crawl = PythonOperator(
         task_id='crawl_youth_housing',
         python_callable=crawl_youth_housing,
+        provide_context=True,
     )
 
-    check_task = PythonOperator(
-        task_id='check_new_announcements',
-        python_callable=check_new_announcements,
-        retries=0,
-    )
-
-    send_email_task = PythonOperator(
+    notify = PythonOperator(
         task_id='send_email',
-        python_callable=send_email,
+        python_callable=send_email_task,
+        provide_context=True,
     )
 
-    crawl_task >> check_task >> send_email_task
+    crawl >> notify
