@@ -15,14 +15,6 @@ config:
     delete_worker_pods: "False"
     delete_worker_pods_on_failure: "False"
     delete_worker_pods_on_success: "False"
-  smtp:
-    smtp_host: "{{ .Values.email.smtpHost }}"
-    smtp_port: "{{ .Values.email.smtpPort }}"
-    smtp_starttls: {{ .Values.email.startTls | quote }}
-    smtp_ssl: {{ .Values.email.ssl | quote }}
-    smtp_user: "{{ .Values.email.smtpUser }}"
-    smtp_password: "{{ .Values.email.smtpPassword }}"
-    smtp_mail_from: "{{ .Values.email.mailFrom }}"
 
 images:
   airflow:
@@ -43,6 +35,31 @@ airflow:
           name: airflow-postgresql
           key: postgres-password
 
+    # SMTP 설정 (env var 로 주입)
+    - name: AIRFLOW__SMTP__SMTP_HOST
+      value: "smtp.gmail.com"
+    - name: AIRFLOW__SMTP__SMTP_PORT
+      value: "465"
+    - name: AIRFLOW__SMTP__SMTP_STARTTLS
+      value: "False"
+    - name: AIRFLOW__SMTP__SMTP_SSL
+      value: "True"
+    - name: AIRFLOW__SMTP__SMTP_USER
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
+    - name: AIRFLOW__SMTP__SMTP_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_PASSWORD
+    - name: AIRFLOW__SMTP__MAIL_FROM
+      valueFrom:
+        secretKeyRef:
+          name: airflow-env-vars
+          key: YOUTH_HOUSING_SENDER_EMAIL
+
     # DAG에서 참조하는 이메일 환경변수만 로드
     - name: YOUTH_HOUSING_SENDER_EMAIL
       valueFrom:
@@ -59,16 +76,6 @@ airflow:
         secretKeyRef:
           name: airflow-env-vars
           key: YOUTH_HOUSING_RECEIVER_EMAILS
-
-# 실제 email.* 변수는 values.yaml 맨 아래에 정의합니다.
-email:
-  smtpHost: smtp.gmail.com        # SSL(465) 또는 STARTTLS(587) 중 선택
-  smtpPort: "465"
-  startTls: "False"               # 465 쓰면 False, 587 쓰면 True
-  ssl: "True"
-  smtpUser: "{{ env `YOUTH_HOUSING_SENDER_EMAIL` }}"
-  smtpPassword: "{{ env `YOUTH_HOUSING_SENDER_PASSWORD` }}"
-  mailFrom: "{{ env `YOUTH_HOUSING_SENDER_EMAIL` }}"
 
 dags:
   gitSync:
