@@ -49,6 +49,7 @@ jobs:
               --from-literal=YOUTH_HOUSING_SENDER_EMAIL="${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}" \
               --from-literal=YOUTH_HOUSING_SENDER_PASSWORD="${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}" \
               --from-literal=YOUTH_HOUSING_RECEIVER_EMAILS="${{ secrets.YOUTH_HOUSING_RECEIVER_EMAILS }}" \
+              --from-literal=SMTP_CONN="smtp://${{ secrets.YOUTH_HOUSING_SENDER_EMAIL }}:${{ secrets.YOUTH_HOUSING_SENDER_PASSWORD }}@smtp.gmail.com:465/?ssl=True" \
               --dry-run=client -o yaml | kubectl apply -f -
 
             # Git credentials 시크릿 생성
