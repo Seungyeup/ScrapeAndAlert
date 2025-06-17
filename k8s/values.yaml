@@ -35,30 +35,12 @@ airflow:
           name: airflow-postgresql
           key: postgres-password
 
-    # SMTP 설정 (env var 로 주입)
-    - name: AIRFLOW__SMTP__SMTP_HOST
-      value: "smtp.gmail.com"
-    - name: AIRFLOW__SMTP__SMTP_PORT
-      value: "465"
-    - name: AIRFLOW__SMTP__SMTP_STARTTLS
-      value: "False"
-    - name: AIRFLOW__SMTP__SMTP_SSL
-      value: "True"
-    - name: AIRFLOW__SMTP__SMTP_USER
+    # SMTP 기본 커넥션을 환경변수로 정의
+    - name: AIRFLOW_CONN_SMTP_DEFAULT
       valueFrom:
         secretKeyRef:
           name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
-    - name: AIRFLOW__SMTP__SMTP_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_PASSWORD
-    - name: AIRFLOW__SMTP__MAIL_FROM
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
+          key: SMTP_CONN
 
     # DAG에서 참조하는 이메일 환경변수만 로드
     - name: YOUTH_HOUSING_SENDER_EMAIL
