@@ -15,6 +15,14 @@ config:
     delete_worker_pods: "False"
     delete_worker_pods_on_failure: "False"
     delete_worker_pods_on_success: "False"
+  smtp:
+    smtp_host: "{{ .Values.email.smtpHost }}"
+    smtp_port: "{{ .Values.email.smtpPort }}"
+    smtp_starttls: {{ .Values.email.startTls | quote }}
+    smtp_ssl: {{ .Values.email.ssl | quote }}
+    smtp_user: "{{ .Values.email.smtpUser }}"
+    smtp_password: "{{ .Values.email.smtpPassword }}"
+    smtp_mail_from: "{{ .Values.email.mailFrom }}"
 
 images:
   airflow:
@@ -23,20 +31,19 @@ images:
     pullPolicy: "Always"
 
 airflow:
-  # 1) 기존 시크릿 환경변수 불러오기
   extraEnvFrom:
     - secretRef:
         name: airflow-env-vars
 
   extraEnv:
-    # 2) Postgres 연결
+    # Postgres 커넥션
     - name: AIRFLOW_CONN_POSTGRES_DEFAULT
       valueFrom:
         secretKeyRef:
           name: airflow-postgresql
           key: postgres-password
 
-    # 3) 이메일 발송용 시크릿 변수
+    # DAG에서 참조하는 이메일 환경변수만 로드
     - name: YOUTH_HOUSING_SENDER_EMAIL
       valueFrom:
         secretKeyRef:
@@ -53,40 +60,23 @@ airflow:
           name: airflow-env-vars
           key: YOUTH_HOUSING_RECEIVER_EMAILS
 
-    # 4) SMTP 설정 (airflow.cfg [email] 섹션 오버라이드)
-    - name: AIRFLOW__EMAIL__SMTP_HOST
-      value: "smtp.gmail.com"
-    - name: AIRFLOW__EMAIL__SMTP_PORT
-      value: "465"
-    - name: AIRFLOW__EMAIL__SMTP_STARTTLS
-      value: "False"
-    - name: AIRFLOW__EMAIL__SMTP_SSL
-      value: "True"
-    - name: AIRFLOW__EMAIL__SMTP_USER
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
-    - name: AIRFLOW__EMAIL__SMTP_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_PASSWORD
-    - name: AIRFLOW__EMAIL__SMTP_MAIL_FROM
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
+# 실제 email.* 변수는 values.yaml 맨 아래에 정의합니다.
+email:
+  smtpHost: smtp.gmail.com        # SSL(465) 또는 STARTTLS(587) 중 선택
+  smtpPort: "465"
+  startTls: "False"               # 465 쓰면 False, 587 쓰면 True
+  ssl: "True"
+  smtpUser: "{{ env `YOUTH_HOUSING_SENDER_EMAIL` }}"
+  smtpPassword: "{{ env `YOUTH_HOUSING_SENDER_PASSWORD` }}"
+  mailFrom: "{{ env `YOUTH_HOUSING_SENDER_EMAIL` }}"
 
 dags:
   gitSync:
     enabled: true
     repo: "https://github.com/Seungyeup/ScrapeAndAlert.git"
     ref: "main"
-    branch: "main"
     subPath: "dags"
     wait: 60
-    # credentialsSecret: "git-credentials"  # public repo 전환으로 비활성화
 
 webserver:
   service:
