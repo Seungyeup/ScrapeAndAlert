@@ -15,6 +15,12 @@ config:
     delete_worker_pods: "False"
     delete_worker_pods_on_failure: "False"
     delete_worker_pods_on_success: "False"
+  smtp:
+    smtp_host: smtp.gmail.com
+    smtp_port: "587"         # STARTTLS용
+    smtp_starttls: "True"
+    smtp_ssl: "False"
+    smtp_mail_from: "seungyeup126.smtp@gmail.com"
 
 images:
   airflow:

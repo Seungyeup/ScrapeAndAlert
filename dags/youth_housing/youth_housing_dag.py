@@ -1,6 +1,7 @@
 import os
 import socket
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 from airflow.operators.email import EmailOperator
 from datetime import datetime, timedelta
@@ -44,9 +45,14 @@ with DAG(
         python_callable=crawl_youth_housing,
     )
 
-    # 2) 이메일 알림 설정
-    sender = os.getenv('YOUTH_HOUSING_SENDER_EMAIL')
-    receivers = os.getenv('YOUTH_HOUSING_RECEIVER_EMAILS', '').split(',')
+    # 2) 이메일 알림 설정 (sender email, password 정보는 smtp_default 커넥션으로 정의됨)
+    receivers = Variable.get(
+        "youth_housing_receivers",
+        default_var=[],
+        deserialize_json=True
+    )
+    if not receivers:
+        raise ValueError("youth_housing_receivers Variable 이 비어 있습니다.")
 
     notify = EmailOperator(
         task_id='send_email',
