@@ -18,9 +18,7 @@ def crawl_youth_housing(**context):
         "Accept-Language": "ko,en;q=0.9",
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         "Origin": "https://soco.seoul.go.kr",
-        "Referer": (
-            "https://soco.seoul.go.kr/youth/bbs/BMSR00015/list.do?menuNo=400008"
-        ),
+        "Referer": "https://soco.seoul.go.kr/youth/bbs/BMSR00015/list.do?menuNo=400008",
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
             "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -43,15 +41,16 @@ def crawl_youth_housing(**context):
     logging.info("API returned JSON keys: %s", list(raw.keys()) if isinstance(raw, dict) else type(raw))
 
     # 3) resultList와 페이징 정보 추출
-    if isinstance(raw, dict) and 'resultList' in raw:
-        all_announcements = raw.get('resultList', [])
-        paging = raw.get('pagingInfo', {})
+    if isinstance(raw, dict) and "resultList" in raw:
+        all_announcements = raw["resultList"]
+        paging = raw.get("pagingInfo", {})
         logging.info(
             "Paging info: page %s/%s, total rows %s",
-            paging.get('pageIndex'), paging.get('totPage'), paging.get('totRow')
+            paging.get("pageIndex"), paging.get("totPage"), paging.get("totRow"),
         )
     else:
         all_announcements = []
+        paging = {}
         logging.error("Unexpected JSON structure: %s", raw)
 
     logging.info("Fetched %d total announcements", len(all_announcements))
@@ -63,7 +62,7 @@ def crawl_youth_housing(**context):
     for a in all_announcements:
         if not isinstance(a, dict):
             continue
-        date_str = a.get('optn1', '')
+        date_str = a.get("optn1", "")
         try:
             posted = datetime.strptime(date_str, "%Y-%m-%d")
         except Exception:
@@ -75,35 +74,44 @@ def crawl_youth_housing(**context):
     logging.info("Filtered %d recent announcements", len(recent))
 
     # 5) DB에서 이미 보낸 공고 ID 조회
-    pg = PostgresHook(postgres_conn_id='postgres_default')
+    pg = PostgresHook(postgres_conn_id="postgres_default")
     existing = pg.get_records("SELECT announcement_id FROM sent_announcements")
     sent_ids = {row[0] for row in existing}
     logging.info("Found %d already sent IDs in DB", len(sent_ids))
 
     # 6) 신규 공고 선별
     new_items = []
+    # 실제 뷰 URL 템플릿
+    url_tpl = (
+        "https://soco.seoul.go.kr/youth/bbs/BMSR00015/view.do"
+        "?boardId={boardId}"
+        "&menuNo=400008"
+        "&pageIndex={pageIndex}"
+        "&searchCondition="
+        "&searchKeyword="
+    )
+    page_idx = paging.get("pageIndex", 1)
+
     for a in recent:
-        ann_id = a.get('boardId')
+        ann_id = a.get("boardId")
         if not ann_id or ann_id in sent_ids:
             continue
         new_items.append({
-            'id':    ann_id,
-            'title': a.get('nttSj', '').strip(),
-            'date':  a.get('optn1'),
-            'url':   (
-                'https://soco.seoul.go.kr'
-                f"/youth/pgm/home/yohome/bbsView.do?bbsNo={ann_id}&bbsId=BMSR00015"
-            ),
+            "id":    ann_id,
+            "title": a.get("nttSj", "").strip(),
+            "date":  a.get("optn1"),
+            "url":   url_tpl.format(boardId=ann_id, pageIndex=page_idx),
         })
+
     logging.info("Identified %d new announcements to insert", len(new_items))
 
     # 7) DB 삽입 (중복 시 무시)
     if new_items:
         try:
             pg.insert_rows(
-                table='sent_announcements',
-                rows=[(it['id'],) for it in new_items],
-                target_fields=['announcement_id'],
+                table="sent_announcements",
+                rows=[(it["id"],) for it in new_items],
+                target_fields=["announcement_id"],
                 replace=True,       # ON CONFLICT DO NOTHING
                 commit_every=100,
             )
