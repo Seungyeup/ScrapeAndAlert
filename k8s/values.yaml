@@ -42,28 +42,27 @@ airflow:
           key: postgres-password
 
     # SMTP 기본 커넥션을 환경변수로 정의
-    - name: AIRFLOW_CONN_SMTP_DEFAULT
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: SMTP_CONN
-
+    # - name: AIRFLOW_CONN_SMTP_DEFAULT
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: airflow-env-vars
+    #       key: SMTP_CONN
     # DAG에서 참조하는 이메일 환경변수만 로드
-    - name: YOUTH_HOUSING_SENDER_EMAIL
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_EMAIL
-    - name: YOUTH_HOUSING_SENDER_PASSWORD
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_SENDER_PASSWORD
-    - name: YOUTH_HOUSING_RECEIVER_EMAILS
-      valueFrom:
-        secretKeyRef:
-          name: airflow-env-vars
-          key: YOUTH_HOUSING_RECEIVER_EMAILS
+    # - name: YOUTH_HOUSING_SENDER_EMAIL
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: airflow-env-vars
+    #       key: YOUTH_HOUSING_SENDER_EMAIL
+    # - name: YOUTH_HOUSING_SENDER_PASSWORD
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: airflow-env-vars
+    #       key: YOUTH_HOUSING_SENDER_PASSWORD
+    # - name: YOUTH_HOUSING_RECEIVER_EMAILS
+    #   valueFrom:
+    #     secretKeyRef:
+    #       name: airflow-env-vars
+    #       key: YOUTH_HOUSING_RECEIVER_EMAILS
 
 dags:
   gitSync:
