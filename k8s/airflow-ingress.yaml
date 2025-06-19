@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: airflow.local
+    - host: 172-30-1-240.nip.io   # ← nip.io 이용
       http:
         paths:
           - path: /
